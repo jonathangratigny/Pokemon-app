@@ -1,21 +1,88 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { Pokemon } from './class/pokemon';
-import { POKEMONS } from './mock-pokemon-list';
+import { HttpClient } from '@angular/common/http';
+import { Observable, catchError, of, tap } from 'rxjs';
 
 @Injectable() // {providedIn: 'root'} de base 'arrose' toute l'application donc on injecte que dans le module concerné
 export class PokemonService {
 
-  public getPokemonList(): Pokemon[] {
-    return POKEMONS;
+  constructor(private _http: HttpClient) { }
+  public getPokemonList(): Observable<Pokemon[]> {
+    return this._http.get<Pokemon[]>('api/pokemons').pipe(
+      tap((pokemonList) => this.log(pokemonList)),
+      catchError((error) => {
+        this.handleError(error, null)
+        return of([]);
+      })
+    );
   }
 
-  public getPokemonById(pokemonId: number): Pokemon | undefined {
-    const pokemons: Pokemon[] = this.getPokemonList();
+  public updatePokemon(pokemon: Pokemon): Observable<null> {
+    const httpOptions = {
+      headers: { 'Content-Type': 'application/json', },
+    }
+    return this._http.put<Pokemon>(`api/pokemons/`, pokemon, httpOptions)
+      .pipe(tap((res) => this.log(res)),
+        catchError((error) => this.handleError(error, null)
+        ))
+  }
 
-    return pokemons.find(pokemon => pokemon.id === pokemonId);
+  public deletePokemonById(pokemonId: number): Observable<null> {
+    return this._http.delete<Pokemon>(`api/pokemons/${pokemonId}`)
+      .pipe(tap((res) => this.log(res)),
+        catchError((error) => this.handleError(error, null)
+        ))
+  }
+
+  public getPokemonById(pokemonId: number): Observable<Pokemon | undefined> {
+    return this._http.get<Pokemon>(`api/pokemons/${pokemonId}`)
+      .pipe(tap((pokemon) => this.log(pokemon)),
+        catchError((error) => {
+          this.handleError(error, undefined)
+          return of(undefined)
+        })
+      )
+  }
+
+  public addPokemon(pokemon: Pokemon): Observable<Pokemon> {
+    const httpOptions = {
+      headers: { 'Content-Type': 'application/json', },
+    }
+    return this._http.post<Pokemon>('api/pokemons', pokemon, httpOptions)
+      .pipe(tap((pokemon) => this.log(pokemon)),
+        catchError((error) => this.handleError(error, null)
+        ))
+  }
+
+
+  private log(response: any) {
+    console.table(response)
+  }
+
+  private handleError(error: Error, errorValue: any) {
+    console.error(error)
+    return of(errorValue)
+  }
+
+  searchPokemonList(term: string): Observable<Pokemon[]> {
+    return this._http.get<Pokemon[]>(`api/pokemons/?name=${term}`).pipe(
+      tap((pokemonList) => this.log(pokemonList)),
+      catchError((error) =>
+        this.handleError(error, []))
+    )
   }
 
   public getPokemonTypes(): string[] {
-    return [...new Set(this.getPokemonList().map(pokemon => pokemon.types[0]))];
+    const types: string[] = [];
+    this.getPokemonList().subscribe(pokemonList => {
+      for (const pokemon of pokemonList) {
+        if (!types.includes(pokemon.types[0])) {
+          types.push(pokemon.types[0]);
+        }
+      }
+    });
+    return types;
   }
+
+
 }

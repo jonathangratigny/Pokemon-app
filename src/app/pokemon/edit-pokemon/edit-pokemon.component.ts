@@ -10,20 +10,19 @@ import { PokemonService } from '../pokemon.service';
 })
 
 export class EditPokemonComponent implements OnInit {
-  pokemon: Pokemon|undefined;
+  pokemon: Pokemon | undefined;
 
   constructor(
     private activatedRoute: ActivatedRoute,
     private pokemonService: PokemonService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
 
     const pokemonId: number = Number(this.activatedRoute.snapshot.params['id']);
     if (pokemonId) {
-      this.pokemon = this.pokemonService.getPokemonById(pokemonId);
+      this.pokemonService.getPokemonById(pokemonId).subscribe(pokemon => this.pokemon = pokemon);
+
     }
   }
-
-
 }

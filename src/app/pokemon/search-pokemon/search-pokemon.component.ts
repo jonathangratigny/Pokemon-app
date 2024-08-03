@@ -23,7 +23,7 @@ export class SearchPokemonComponent implements OnInit {
 
   protected searchTerms = new Subject<string>();
   protected pokemons: Pokemon[] = [];
-  pokemons$ = Observable<Pokemon[]>;
+  pokemons$: Observable<Pokemon[]>;
 
   search(term: string) {
     console.log('term', term);
